@@ -19,8 +19,14 @@ public class ScheduleService {
     }
 
     //전체 조회
-    public List<ScheduleEntity> findAll(){
-        return scheduleRepository.findAll();
+    public List<ScheduleEntity> findAll(String name){
+
+        if (name == null || name.isEmpty()) {
+            //전체 조회 + 정령
+            return scheduleRepository.findAllByOrderByUpdateAtDesc();
+        }
+        // 작성자명 조회 + 정렬
+        return scheduleRepository.findByNameOrderByUpdateAtDesc(name);
     }
 
     //단건 조회
@@ -43,7 +49,7 @@ public class ScheduleService {
 
         //수정
         schedules.setTitle(newSchedule.getTitle());
-        schedules.setContent(newSchedule.getContent());
+        schedules.setName(newSchedule.getName());
 
         //저장
         return scheduleRepository.save(schedules);
