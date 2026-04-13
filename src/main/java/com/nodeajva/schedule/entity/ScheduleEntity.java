@@ -30,18 +30,18 @@ public class ScheduleEntity {
     @Column(nullable = false, length = 50)
     private String name;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 255)
     private String password;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime creatAt;
+    private LocalDateTime createdAt;
 
     @Column
     private LocalDateTime updateAt;
 
     @PrePersist
-    protected void onCreat(){
-        creatAt = LocalDateTime.now();
+    protected void createdAt(){
+        createdAt = LocalDateTime.now();
     }
 
     @PreUpdate
