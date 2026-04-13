@@ -21,7 +21,7 @@ public class  ScheduleRequest {
         entity.setTitle(this.title);
         entity.setContent(this.content);
         entity.setName(this.name);
-        entity.setTitle(this.password);
+        entity.setPassword(this.password);
         return entity;
     }
 
