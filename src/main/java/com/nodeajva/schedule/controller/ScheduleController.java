@@ -22,8 +22,10 @@ public class ScheduleController {
 
     //전체조회
     @GetMapping
-    public List<ScheduleEntity> findAll() {
-        return scheduleService.findAll();
+    public List<ScheduleEntity> findAll(
+            @RequestParam(required = false) String name
+    ) {
+        return scheduleService.findAll(name);
     }
 
     //단건 조회
@@ -36,7 +38,7 @@ public class ScheduleController {
     @PutMapping("/{id}")
     public ScheduleEntity update(
             @PathVariable Long id,
-            @RequestParam String password,  // 'd' 추가!
+            @RequestParam String password,
             @RequestBody ScheduleEntity schedule
     ){
         return scheduleService.update(id, password, schedule);
