@@ -1,6 +1,6 @@
 package com.nodeajva.schedule.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,7 +32,7 @@ public class ScheduleEntity {
     @Column(nullable = false, length = 50)
     private String name;
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+
     @Column(nullable = false, length = 255)
     private String password;
 
@@ -51,4 +51,6 @@ public class ScheduleEntity {
     protected void onUpdate(){
         updateAt = LocalDateTime.now();
     }
+
+
 }
