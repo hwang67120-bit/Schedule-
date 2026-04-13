@@ -1,5 +1,6 @@
 package com.nodeajva.schedule.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "schedule")
+@EntityListeners(AllArgsConstructor.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,18 +32,19 @@ public class ScheduleEntity {
     @Column(nullable = false, length = 50)
     private String name;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false, length = 255)
     private String password;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createAt;
 
     @Column
     private LocalDateTime updateAt;
 
     @PrePersist
     protected void createdAt(){
-        createdAt = LocalDateTime.now();
+        createAt = LocalDateTime.now();
     }
 
     @PreUpdate
