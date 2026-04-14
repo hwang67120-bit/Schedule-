@@ -7,6 +7,7 @@ import com.nodeajva.schedule.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,6 +17,31 @@ public class ScheduleController {
 
     @Autowired
     private ScheduleService scheduleService;
+
+
+    @GetMapping("/search")
+    public List<ScheduleResponse> search(@RequestParam String keyword) {
+        List<ScheduleEntity>  schedules = scheduleService.findAll(null);
+
+        return schedules.stream()
+                .filter(s -> s.getTitle().contains(keyword)||
+                        s.getContent().contains(keyword))
+                .map(ScheduleResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/recent")
+    public List<ScheduleResponse> recent (@RequestParam(defaultValue = "5") int limit){
+
+        List<ScheduleEntity> schedules = scheduleService.findAll(null);
+
+
+        return schedules.stream()
+                .sorted(Comparator.comparing(ScheduleEntity::getCreateAt).reversed())
+                .limit(limit)
+                .map(ScheduleResponse::from)
+                .collect(Collectors.toList());
+    }
 
     //등록
     @PostMapping
