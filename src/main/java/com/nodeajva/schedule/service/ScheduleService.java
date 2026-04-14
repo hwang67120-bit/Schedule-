@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ScheduleService {
@@ -19,16 +20,16 @@ public class ScheduleService {
     }
 
     //전체 조회
-    public List<ScheduleEntity> findAll(String name){
+    public List<ScheduleEntity> findAll(String name) {
+        return Optional.ofNullable(name) // nane을 Optional로 감싸기 // name이 null이면 → Optional.empty() //name이 있으면 → Optional.of(name)
 
-        if (name == null || name.isEmpty()) {
-            //전체 조회 + 정령
-            return scheduleRepository.findAllByOrderByUpdateAtDesc();
-        }
-        // 작성자명 조회 + 정렬
-        return scheduleRepository.findByNameOrderByUpdateAtDesc(name);
+                .filter(n -> !n.isEmpty()) // 비어있지 않은 것만 통과 // 비어있으면 → Optional.empty()
+
+                .map(scheduleRepository::findByNameOrderByUpdateAtDesc) // name으로 조회 // Optional<List<ScheduleEntity>> 반환
+
+                .orElseGet(scheduleRepository::findAllByOrderByUpdateAtDesc);// Optional이 비어있으면 (name이 null이거나 empty)
+                                                                                // → 전체 조회
     }
-
     //단건 조회
     public ScheduleEntity findById(Long id){
         return scheduleRepository.findById(id)
