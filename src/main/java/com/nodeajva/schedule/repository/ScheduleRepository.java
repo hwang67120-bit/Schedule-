@@ -10,4 +10,9 @@ public interface ScheduleRepository extends JpaRepository<ScheduleEntity, Long> 
     List<ScheduleEntity> findAllByOrderByUpdateAtDesc();
 
     List<ScheduleEntity> findByNameOrderByUpdateAtDesc(String name);
+
+    default ScheduleEntity findByOrThrow(Long id){
+        return this.findById(id)
+                .orElseThrow(()-> new RuntimeException("일정 없음"));
+    }
 }
