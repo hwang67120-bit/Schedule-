@@ -32,16 +32,14 @@ public class ScheduleService {
     }
     //단건 조회
     public ScheduleEntity findById(Long id){
-        return scheduleRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("일정 없음"));
+        return scheduleRepository.findByOrThrow(id);
     }
 
     //수정
     public ScheduleEntity update(Long id, String password, ScheduleEntity newSchedule){
 
         //기존 데이터 조회
-        ScheduleEntity schedules = scheduleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("일정 없음"));
+        ScheduleEntity schedules = scheduleRepository.findByOrThrow(id);
 
         //비밀번호 확인
         if (!schedules.getPassword().equals(password)){
@@ -60,8 +58,7 @@ public class ScheduleService {
     public void delete(Long id, String password){
 
         //기존 데이터 조회
-        ScheduleEntity schedule = scheduleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("일정 없음"));
+        ScheduleEntity schedule = scheduleRepository.findByOrThrow(id);
 
         if (!schedule.getPassword().equals(password)) {
             throw new RuntimeException("비밀번호 불일치");
