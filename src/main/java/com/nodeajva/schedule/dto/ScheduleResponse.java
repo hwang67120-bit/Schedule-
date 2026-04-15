@@ -1,26 +1,23 @@
 package com.nodeajva.schedule.dto;
 
 import com.nodeajva.schedule.entity.ScheduleEntity;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class ScheduleResponse {
 
-    private Long id;
-    private String title;
-    private String content;
-    private String name;
-    private LocalDateTime createAt;
-    private LocalDateTime updateAt;
+
+
+@Builder
+public record ScheduleResponse(
+
+     Long id,
+     String title,
+     String content,
+     String name,
+     LocalDateTime createAt,
+     LocalDateTime updateAt ) {
 
     public static ScheduleResponse from(ScheduleEntity entity) {
         return ScheduleResponse.builder()
