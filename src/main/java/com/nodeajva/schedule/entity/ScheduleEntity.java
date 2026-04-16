@@ -2,21 +2,19 @@ package com.nodeajva.schedule.entity;
 
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.springframework.web.ErrorResponse;
 
-import java.time.LocalDate;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "schedule")
 @EntityListeners(AllArgsConstructor.class)
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ScheduleEntity {
 
     @Id
@@ -42,6 +40,9 @@ public class ScheduleEntity {
     @Column
     private LocalDateTime updateAt;
 
+
+
+
     @PrePersist
     protected void createdAt(){
         createAt = LocalDateTime.now();
@@ -53,4 +54,9 @@ public class ScheduleEntity {
     }
 
 
+    public void update(String title, String content, String name) {
+        this.title = title;
+        this.content = content;
+        this.name = name;
+    }
 }

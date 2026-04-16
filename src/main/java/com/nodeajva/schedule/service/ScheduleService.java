@@ -1,70 +1,163 @@
 package com.nodeajva.schedule.service;
 
+import com.nodeajva.schedule.dto.ScheduleRequest;
+import com.nodeajva.schedule.dto.ScheduleResponse;
 import com.nodeajva.schedule.entity.ScheduleEntity;
 import com.nodeajva.schedule.repository.ScheduleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ScheduleService {
 
-    @Autowired
-    private ScheduleRepository scheduleRepository;
+    private final ScheduleRepository scheduleRepository;
 
-    //저장
-    public ScheduleEntity save(ScheduleEntity schedule){
-        return scheduleRepository.save(schedule);
+
+
+    // 저장
+    public ScheduleResponse save(ScheduleRequest request) {
+        ScheduleEntity entity = request.toEntity();
+        ScheduleEntity saved = scheduleRepository.save(entity);
+        return ScheduleResponse.from(saved);
     }
 
-    //전체 조회
-    public List<ScheduleEntity> findAll(String name) {
-        return Optional.ofNullable(name) // nane을 Optional로 감싸기 // name이 null이면 → Optional.empty() //name이 있으면 → Optional.of(name)
+    // 전체 조회
+    public List<ScheduleResponse> findAll(String name) {
+        List<ScheduleEntity> entities = Optional.ofNullable(name)
+                .filter(n -> !n.isEmpty())
+                .map(scheduleRepository::findByNameOrderByUpdateAtDesc)
+                .orElseGet(scheduleRepository::findAllByOrderByUpdateAtDesc);
 
-                .filter(n -> !n.isEmpty()) // 비어있지 않은 것만 통과 // 비어있으면 → Optional.empty()
-
-                .map(scheduleRepository::findByNameOrderByUpdateAtDesc) // name으로 조회 // Optional<List<ScheduleEntity>> 반환
-
-                .orElseGet(scheduleRepository::findAllByOrderByUpdateAtDesc);// Optional이 비어있으면 (name이 null이거나 empty)
-                                                                                // → 전체 조회
-    }
-    //단건 조회
-    public ScheduleEntity findById(Long id){
-        return scheduleRepository.findByOrThrow(id);
+        return entities.stream()
+                .map(ScheduleResponse::from)
+                .collect(Collectors.toList());
     }
 
-    //수정
-    public ScheduleEntity update(Long id, String password, ScheduleEntity newSchedule){
-
-        //기존 데이터 조회
-        ScheduleEntity schedules = scheduleRepository.findByOrThrow(id);
-
-        //비밀번호 확인
-        if (!schedules.getPassword().equals(password)){
-            throw new RuntimeException("비밀번호 불일치");
-        }
-
-        //수정
-        schedules.setTitle(newSchedule.getTitle());
-        schedules.setName(newSchedule.getName());
-
-        //저장
-        return scheduleRepository.save(schedules);
+    // 단건 조회
+    public ScheduleResponse findById(Long id) {
+        ScheduleEntity entity = scheduleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다"));
+        return ScheduleResponse.from(entity);
     }
 
-    //삭제
-    public void delete(Long id, String password){
+    // 수정
+    public ScheduleResponse update(Long id, String password, ScheduleRequest request) {
+        // 1) 조회
+        ScheduleEntity schedule = scheduleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다"));
 
-        //기존 데이터 조회
-        ScheduleEntity schedule = scheduleRepository.findByOrThrow(id);
-
+        // 2) 비밀번호 확인
         if (!schedule.getPassword().equals(password)) {
             throw new RuntimeException("비밀번호 불일치");
         }
 
-        //삭제
+        // 3) 수정
+        request.applyTo(schedule);
+
+        // 4) 저장
+        ScheduleEntity updated = scheduleRepository.save(schedule);
+        return ScheduleResponse.from(updated);
+    }
+
+    // 삭제
+    public void delete(Long id, String password) {
+        // 1) 조회
+        ScheduleEntity schedule = scheduleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다"));
+
+        // 2) 비밀번호 확인
+        if (!schedule.getPassword().equals(password)) {
+            throw new RuntimeException("비밀번호 불일치");
+        }
+
+        // 3) 삭제
         scheduleRepository.delete(schedule);
+    }
+
+
+
+    // 검색
+    public List<ScheduleResponse> search(String keyword) {
+        List<ScheduleEntity> schedules = scheduleRepository.findAllByOrderByUpdateAtDesc();
+
+        return schedules.stream()
+                .filter(s -> s.getTitle().contains(keyword) ||
+                        s.getContent().contains(keyword))
+                .map(ScheduleResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // 최신 글 조회
+    public List<ScheduleResponse> findRecent(int limit) {
+        List<ScheduleEntity> schedules = scheduleRepository.findAllByOrderByUpdateAtDesc();
+
+        return schedules.stream()
+                .sorted(Comparator.comparing(ScheduleEntity::getCreateAt).reversed())
+                .limit(limit)
+                .map(ScheduleResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // 최근 일정 1개
+    public ScheduleResponse findLatest() {
+        List<ScheduleEntity> schedules = scheduleRepository.findAllByOrderByUpdateAtDesc();
+
+        return schedules.stream()
+                .sorted(Comparator.comparing(ScheduleEntity::getCreateAt).reversed())
+                .findFirst()
+                .map(ScheduleResponse::from)
+                .orElseThrow(() -> new RuntimeException("일정 없음"));
+    }
+
+    // 작성자 일정 존재 확인
+    public boolean hasSchedule(String name) {
+        List<ScheduleEntity> schedules = scheduleRepository.findAllByOrderByUpdateAtDesc();
+
+        return schedules.stream()
+                .anyMatch(s -> s.getName().equals(name));
+    }
+
+
+
+    // 작성자별 개수
+    public Map<String, Long> countByName() {
+        List<ScheduleEntity> schedules = scheduleRepository.findAllByOrderByUpdateAtDesc();
+
+        return schedules.stream()
+                .collect(Collectors.groupingBy(
+                        ScheduleEntity::getName,
+                        Collectors.counting()
+                ));
+    }
+
+    // 일별 개수
+    public Map<LocalDate, Long> countByDate() {
+        List<ScheduleEntity> schedules = scheduleRepository.findAllByOrderByUpdateAtDesc();
+
+        return schedules.stream()
+                .collect(Collectors.groupingBy(
+                        s -> s.getCreateAt().toLocalDate(),
+                        Collectors.counting()
+                ));
+    }
+
+    // 수정일별 개수
+    public Map<LocalDate, Long> countByUpdateDate() {
+        List<ScheduleEntity> schedules = scheduleRepository.findAllByOrderByUpdateAtDesc();
+
+        return schedules.stream()
+                .filter(s -> s.getUpdateAt() != null)
+                .collect(Collectors.groupingBy(
+                        s -> s.getUpdateAt().toLocalDate(),
+                        Collectors.counting()
+                ));
     }
 }

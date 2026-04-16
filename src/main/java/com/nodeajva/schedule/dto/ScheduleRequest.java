@@ -1,7 +1,7 @@
 package com.nodeajva.schedule.dto;
 
 import com.nodeajva.schedule.entity.ScheduleEntity;
-
+import lombok.Builder;
 
 
 public record  ScheduleRequest (
@@ -14,13 +14,16 @@ public record  ScheduleRequest (
 
     //엔티티 변환
     public ScheduleEntity toEntity() {
+        return ScheduleEntity.builder()
+                .title(this.title)
+                .content(this.content)
+                .name(this.name)
+                .password(this.password)
+                .build();
+    }
 
-        ScheduleEntity entity = new ScheduleEntity();
-        entity.setTitle(title);
-        entity.setContent(content);
-        entity.setName(name);
-        entity.setPassword(password);
-        return entity;
+    public void applyTo(ScheduleEntity entity) {
+        entity.update(this.title, this.content , this.name);
     }
 }
 
