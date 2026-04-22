@@ -341,3 +341,106 @@ public Schedule save(@RequestBody ScheduleEntity schedule) { ... }
 | @RequestParam | 쿼리 스트링 | `?name=value` | 검색, 필터링 |
 | @PathVariable | URL 경로 | `/api/users/123` | 리소스 식별 |
 | @RequestBody | 요청 본문 | `{"name": "value"}` | 데이터 생성/수정 |
+
+---
+
+## 5. 긴 Repository 메서드명 문제
+
+### 문제 상황
+Spring Data JPA의 메서드명 규칙으로 쿼리를 생성하다보니 메서드명이 너무 길어짐
+
+```java
+List<Schedule> findAllByOrderByCreatedAtDesc();
+```
+
+**문제점**:
+- 읽기 어려움
+- 타이핑 불편
+- 가독성 저하
+- Service에서 호출 시 코드가 장황함
+
+### 시도한 해결 방법
+
+#### 1. 메서드명 그대로 사용
+```java
+schedules = scheduleRepository.findAllByOrderByCreatedAtDesc();
+```
+- ✅ 동작은 정상
+- ❌ 여전히 길고 불편함
+
+#### 2. Pageable/Sort 사용 고려
+```java
+Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+List<Schedule> schedules = scheduleRepository.findAll(sort);
+```
+- ✅ Repository 수정 불필요
+- ❌ Service 코드가 복잡해짐
+- ❌ 정렬 로직이 Service에 노출됨
+
+### 최종 해결: @Query 사용
+
+**ScheduleRepository.java**
+```java
+@Query("SELECT s FROM Schedule s ORDER BY s.createdAt DESC")
+List<Schedule> findRecent();
+```
+
+**ScheduleService.java**
+```java
+public List<ScheduleResponse> findRecent() {
+    List<Schedule> schedules = scheduleRepository.findRecent();
+    // ... 변환 로직
+}
+```
+
+**장점**:
+- ✅ 메서드명 간결: `findRecent()`
+- ✅ JPQL로 명확한 쿼리 작성
+- ✅ 가독성 향상
+- ✅ 실무에서도 많이 사용하는 패턴
+- ✅ 복잡한 쿼리도 작성 가능
+
+**JPQL (Java Persistence Query Language)**:
+- SQL과 유사하지만 엔티티 기반
+- 테이블명/컬럼명 대신 클래스명/필드명 사용
+- 예: `Schedule` (클래스), `createdAt` (필드)
+
+### 배운 점
+
+1. **Spring Data JPA 메서드명의 한계**
+   - 간단한 쿼리: 메서드명 규칙이 편리함
+   - 복잡한 쿼리: 메서드명이 과도하게 길어짐
+   - `findAllByOrderByCreatedAtDesc()` 같은 장황한 이름 발생
+
+2. **@Query의 활용**
+   - JPQL로 직접 쿼리 작성 가능
+   - 메서드명을 의미있게 짧게 지을 수 있음
+   - SQL과 유사한 문법으로 학습 용이
+
+3. **JPQL vs SQL 비교**
+   | 항목 | SQL | JPQL |
+   |------|-----|------|
+   | 대상 | 테이블 | 엔티티 클래스 |
+   | 이름 | `schedules` (테이블) | `Schedule` (클래스) |
+   | 필드 | `created_at` (컬럼) | `createdAt` (필드) |
+   | 예시 | `SELECT * FROM schedules` | `SELECT s FROM Schedule s` |
+
+4. **실무 가이드라인**
+   - 간단한 조회: 메서드명 규칙 사용 (`findById`, `findByUserId`)
+   - 복잡한 조회: `@Query` 사용
+   - 매우 복잡한 쿼리: QueryDSL, Specification 고려
+   - 메서드명이 4단어 이상이면 `@Query` 검토
+
+5. **가독성 개선 효과**
+```java
+   // Before
+   scheduleRepository.findAllByOrderByCreatedAtDesc();
+   
+   // After  
+   scheduleRepository.findRecent();
+```
+   - 의도가 명확함
+   - 타이핑 편리
+   - 유지보수 용이
+
+---
