@@ -444,3 +444,91 @@ public List<ScheduleResponse> findRecent() {
    - 유지보수 용이
 
 ---
+
+## 6. Repository 조회 시 반복되는 예외 처리 코드
+
+### 문제 상황
+모든 Service에서 엔티티 조회 시 동일한 예외 처리 패턴이 반복됨
+
+```java
+// UserService
+User user = userRepository.findById(userId)
+        .orElseThrow(() -> new UserNotFoundException());
+
+// ScheduleService  
+Schedule schedule = scheduleRepository.findById(scheduleId)
+        .orElseThrow(() -> new ScheduleNotFoundException());
+
+// CommentService
+Comment comment = commentRepository.findById(commentId)
+        .orElseThrow(() -> new CommentNotFoundException());
+```
+
+**문제점**:
+- 같은 패턴이 여러 곳에 중복
+- 코드가 장황함 (3줄)
+- DRY 원칙 위반
+- 오타 가능성
+
+### 해결 방법: Repository default 메서드 추가
+
+**Java 8 인터페이스 default 메서드 활용**
+
+#### UserRepository.java
+```java
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    default User load(Long id) {
+        return findById(id).orElseThrow(UserNotFoundException::new);
+    }
+}
+```
+
+#### ScheduleRepository.java
+```java
+public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
+
+    default Schedule load(Long id) {
+        return findById(id).orElseThrow(ScheduleNotFoundException::new);
+    }
+}
+```
+
+**Service에서 사용**:
+```java
+// Before (3줄)
+User user = userRepository.findById(userId)
+        .orElseThrow(() -> new UserNotFoundException());
+
+// After (1줄)
+User user = userRepository.load(userId);
+```
+
+**장점**:
+- ✅ 코드 중복 제거 (DRY)
+- ✅ 가독성 향상 (3줄 → 1줄)
+- ✅ 예외 처리 로직 캡슐화
+- ✅ 오타 위험 감소
+- ✅ 메서드명 간결 (`load`)
+
+### 배운 점
+
+1. **Java 8 인터페이스 default 메서드**
+   - 인터페이스에 구현 메서드 작성 가능
+   - Repository 확장 없이 기능 추가
+   - JpaRepository 기본 메서드와 조합 가능
+
+2. **메서드명 선택 과정**
+   - `getById`: Getter와 혼동 가능성
+   - `findByIdOrThrow`: 너무 길고 장황함
+   - `load`: 짧고 명확, Hibernate 용어와 일관성
+
+3. **고급 문법 캡슐화**
+   - Optional, orElseThrow, 람다를 Repository에 숨김
+   - Service는 간단한 메서드 호출만
+   - "소설책처럼 읽히는 코드" 구현
+
+4. **DRY 원칙 적용**
+   - 3번 이상 반복되는 패턴 발견
+   - 공통 로직을 한 곳에 모음
+   - 유지보수성 향상
